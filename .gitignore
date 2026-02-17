@@ -4,8 +4,8 @@ venv/
 env/
 
 # Database and secrets
-data/backup_manager.sqlite
-data/backup_manager.sqlite-*
+data/*.sqlite
+data/*.sqlite-*
 .secret_key
 
 # Logs
