@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% set title = 'Samba Config' %}
+{% set active = 'samba' %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px;">
+  <h2 style="margin: 0;">Samba configuration</h2>
+  <p style="margin: 4px 0 0; color: var(--muted);">Edit JSON and save. Requires sudo to update smb.conf.</p>
+</div>
+
+<div class="card">
+  <form method="post">
+    <label>Configuration (JSON)</label>
+    <textarea name="config_json" style="min-height: 360px;">{{ config_json }}</textarea>
+    <div style="margin-top: 16px; display: flex; gap: 10px;">
+      <button class="button">Save</button>
+      <button class="button secondary" type="button" data-system-run="samba">Run now</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

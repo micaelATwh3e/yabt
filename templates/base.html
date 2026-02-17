@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title or 'Backup Manager' }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <h1>YATB</h1>
+        <span>Yet Another Backup Tool</span>
+      </div>
+      {% if current_user.username %}
+      <nav>
+        <a href="{{ url_for('index') }}" class="{{ 'active' if active == 'index' else '' }}">Dashboard</a>
+        <a href="{{ url_for('profiles') }}" class="{{ 'active' if active == 'profiles' else '' }}">Profiles</a>
+        <a href="{{ url_for('ssh_config') }}" class="{{ 'active' if active == 'ssh' else '' }}">SSH</a>
+        <a href="{{ url_for('samba_config') }}" class="{{ 'active' if active == 'samba' else '' }}">Samba</a>
+        <a href="{{ url_for('runs') }}" class="{{ 'active' if active == 'runs' else '' }}">Runs</a>
+        <a href="{{ url_for('system_runs') }}" class="{{ 'active' if active == 'system_runs' else '' }}">System Runs</a>
+        {% if current_user.role == 'admin' %}
+        <a href="{{ url_for('users') }}" class="{{ 'active' if active == 'users' else '' }}">Users</a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}">Logout</a>
+      </nav>
+      {% endif %}
+    </header>
+    <main>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% set title = 'SSH Config' %}
+{% set active = 'ssh' %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px;">
+  <h2 style="margin: 0;">SSH backup configuration</h2>
+  <p style="margin: 4px 0 0; color: var(--muted);">Edit JSON and save. Use paramiko for SSH/SFTP.</p>
+</div>
+
+<div class="card">
+  <form method="post">
+    <div class="form-grid" style="margin-bottom: 16px;">
+      <div>
+        <label>Schedule time</label>
+        <input type="time" name="schedule_time" value="{{ schedule_time }}" />
+      </div>
+      <div style="display: flex; align-items: flex-end;">
+        <label style="display: inline-flex; align-items: center; gap: 8px;">
+          <input type="checkbox" name="schedule_enabled" {{ 'checked' if schedule_enabled else '' }} />
+          Enable SSH schedule
+        </label>
+      </div>
+    </div>
+    <label>Configuration (JSON)</label>
+    <textarea name="config_json" style="min-height: 360px;">{{ config_json }}</textarea>
+    <div style="margin-top: 16px; display: flex; gap: 10px;">
+      <button class="button">Save</button>
+      <button class="button secondary" type="button" data-system-run="ssh">Run now</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

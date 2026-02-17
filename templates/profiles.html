@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% set title = 'Profiles' %}
+{% set active = 'profiles' %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+  <div>
+    <h2 style="margin: 0;">Backup profiles</h2>
+    <p style="margin: 4px 0 0; color: var(--muted);">Define what to copy, when to run, and how to verify.</p>
+  </div>
+  <a class="button" href="{{ url_for('profile_new') }}">New profile</a>
+</div>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Source</th>
+        <th>Destination</th>
+        <th>Schedule</th>
+        <th>Verify</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for profile in profiles %}
+      <tr>
+        <td>{{ profile.name }}</td>
+        <td>{{ profile.source_path }}</td>
+        <td>{{ profile.dest_path }}</td>
+        <td>{{ profile.schedule_time or 'off' }}</td>
+        <td>{{ profile.verify_mode }}</td>
+        <td style="text-align: right;">
+          <a class="button secondary" href="{{ url_for('profile_edit', profile_id=profile.id) }}">Edit</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="6">No profiles yet.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

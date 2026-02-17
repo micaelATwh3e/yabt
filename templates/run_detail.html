@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% set title = 'Run detail' %}
+{% set active = 'runs' %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px;">
+  <h2 style="margin: 0;">Run for {{ run.profile_name }}</h2>
+  <p style="margin: 4px 0 0; color: var(--muted);">{{ run.started_at }} - {{ run.status }}</p>
+</div>
+
+<div class="card" style="white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;">
+  {{ run.log_text or 'No log output.' }}
+</div>
+{% endblock %}

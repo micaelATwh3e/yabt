@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% set title = 'Profile' %}
+{% set active = 'profiles' %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px;">
+  <h2 style="margin: 0;">{{ 'Edit profile' if profile else 'New profile' }}</h2>
+  <p style="margin: 4px 0 0; color: var(--muted);">Keep names unique. Paths should be absolute.</p>
+</div>
+
+<div class="card">
+  <form method="post">
+    <div class="form-grid">
+      <div>
+        <label>Name</label>
+        <input type="text" name="name" value="{{ profile.name if profile else '' }}" required />
+      </div>
+      <div>
+        <label>Source path</label>
+        <input type="text" name="source_path" value="{{ profile.source_path if profile else '' }}" required />
+      </div>
+      <div>
+        <label>Destination path</label>
+        <input type="text" name="dest_path" value="{{ profile.dest_path if profile else '' }}" required />
+      </div>
+      <div>
+        <label>Schedule time</label>
+        <input type="time" name="schedule_time" value="{{ profile.schedule_time if profile else '' }}" />
+      </div>
+      <div>
+        <label>Retention count</label>
+        <input type="number" name="retention_count" min="0" value="{{ profile.retention_count if profile else 7 }}" />
+      </div>
+      <div>
+        <label>Verify mode</label>
+        <select name="verify_mode">
+          {% set mode = profile.verify_mode if profile else 'size' %}
+          <option value="off" {{ 'selected' if mode == 'off' else '' }}>Off</option>
+          <option value="size" {{ 'selected' if mode == 'size' else '' }}>Size</option>
+          <option value="hash" {{ 'selected' if mode == 'hash' else '' }}>Hash</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px;">
+      <label>Exclude patterns (one per line)</label>
+      <textarea name="exclude_patterns">{% if profile %}{{ profile.exclude_text }}{% endif %}</textarea>
+    </div>
+
+    <div style="margin-top: 12px;">
+      <label style="display: inline-flex; align-items: center; gap: 8px;">
+        <input type="checkbox" name="schedule_enabled" {{ 'checked' if profile and profile.schedule_enabled else '' }} />
+        Enable schedule
+      </label>
+    </div>
+
+    <div style="margin-top: 20px; display: flex; gap: 10px;">
+      <button class="button">Save</button>
+      <a class="button secondary" href="{{ url_for('profiles') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% if profile %}
+<form method="post" action="{{ url_for('profile_delete', profile_id=profile.id) }}" style="margin-top: 16px;">
+  <button class="button secondary" onclick="return confirm('Delete this profile?');">Delete profile</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% set title = 'System Run' %}
+{% set active = 'system_runs' %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px;">
+  <h2 style="margin: 0;">{{ run.task_type }} run</h2>
+  <p style="margin: 4px 0 0; color: var(--muted);">{{ run.started_at }} - {{ run.status }}</p>
+</div>
+
+<div class="card" style="white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;">
+  {{ run.log_text or 'No log output.' }}
+</div>
+{% endblock %}

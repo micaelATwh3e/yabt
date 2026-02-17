@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% set title = 'User' %}
+{% set active = 'users' %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px;">
+  <h2 style="margin: 0;">{{ 'Edit user' if user else 'New user' }}</h2>
+  <p style="margin: 4px 0 0; color: var(--muted);">Passwords are hashed in SQLite.</p>
+</div>
+
+<div class="card">
+  <form method="post">
+    <div class="form-grid">
+      <div>
+        <label>Username</label>
+        <input type="text" name="username" value="{{ user.username if user else '' }}" required />
+      </div>
+      <div>
+        <label>Role</label>
+        <select name="role">
+          {% set role = user.role if user else 'operator' %}
+          <option value="operator" {{ 'selected' if role == 'operator' else '' }}>Operator</option>
+          <option value="admin" {{ 'selected' if role == 'admin' else '' }}>Admin</option>
+        </select>
+      </div>
+      <div>
+        <label>{{ 'New password' if user else 'Password' }}</label>
+        <input type="password" name="password" {{ 'required' if not user else '' }} />
+      </div>
+    </div>
+    <div style="margin-top: 20px; display: flex; gap: 10px;">
+      <button class="button">Save</button>
+      <a class="button secondary" href="{{ url_for('users') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% if user %}
+<form method="post" action="{{ url_for('user_delete', user_id=user.id) }}" style="margin-top: 16px;">
+  <button class="button secondary" onclick="return confirm('Delete this user?');">Delete user</button>
+</form>
+{% endif %}
+{% endblock %}

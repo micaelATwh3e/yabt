@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% set title = 'Dashboard' %}
+{% set active = 'index' %}
+
+{% block content %}
+<section class="hero">
+  <div class="card">
+    <h2>Backup control center</h2>
+    <p>Queue runs, tune schedules, and track the latest outcomes in one place.</p>
+    <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+      <button class="button" data-scheduler-toggle>
+        Scheduler: {{ 'On' if scheduler_enabled else 'Off' }}
+      </button>
+      <button class="button secondary" type="button" data-system-run="ssh">
+        SSH: {{ 'Running' if system_status.ssh else 'Run now' }}
+      </button>
+      <button class="button secondary" type="button" data-system-run="samba">
+        Samba: {{ 'Running' if system_status.samba else 'Run now' }}
+      </button>
+      <a class="button secondary" href="{{ url_for('profiles') }}">Manage profiles</a>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="stat">
+      <span>Profiles</span>
+      <strong>{{ profiles | length }}</strong>
+    </div>
+    <div class="stat">
+      <span>Running</span>
+      <strong>{{ queue_status.running | length }}</strong>
+    </div>
+    <div class="stat">
+      <span>Queued</span>
+      <strong>{{ queue_status.queued | length }}</strong>
+    </div>
+  </div>
+</section>
+
+<section class="grid">
+  {% for item in profiles %}
+  {% set profile = item.profile %}
+  {% set last_run = item.last_run %}
+  <div class="card" data-profile-id="{{ profile.id }}">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0;">{{ profile.name }}</h3>
+      <span class="badge success status-badge">idle</span>
+    </div>
+    <p style="color: var(--muted); margin-top: 6px;">{{ profile.source_path }} -> {{ profile.dest_path }}</p>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0;">
+      <span class="badge idle">Schedule {{ profile.schedule_time or 'off' }}</span>
+      <span class="badge idle">Retention {{ profile.retention_count }}</span>
+      <span class="badge idle">Verify {{ profile.verify_mode }}</span>
+    </div>
+    {% if last_run %}
+      <p style="margin: 0; color: var(--muted);">Last run: {{ last_run.started_at }} ({{ last_run.status }})</p>
+    {% else %}
+      <p style="margin: 0; color: var(--muted);">No runs yet</p>
+    {% endif %}
+    <div style="margin-top: 16px; display: flex; gap: 10px;">
+      <button class="button" data-run-now="{{ profile.id }}">Run now</button>
+      <a class="button secondary" href="{{ url_for('profile_edit', profile_id=profile.id) }}">Edit</a>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

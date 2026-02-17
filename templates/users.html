@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% set title = 'Users' %}
+{% set active = 'users' %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+  <div>
+    <h2 style="margin: 0;">User access</h2>
+    <p style="margin: 4px 0 0; color: var(--muted);">Admins can manage users and schedules.</p>
+  </div>
+  <a class="button" href="{{ url_for('user_new') }}">New user</a>
+</div>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Role</th>
+        <th>Last login</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td>{{ user.username }}</td>
+        <td>{{ user.role }}</td>
+        <td>{{ user.last_login or '-' }}</td>
+        <td style="text-align: right;">
+          <a class="button secondary" href="{{ url_for('user_edit', user_id=user.id) }}">Edit</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4">No users yet.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

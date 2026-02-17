@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% set title = 'System Runs' %}
+{% set active = 'system_runs' %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px;">
+  <h2 style="margin: 0;">System task runs</h2>
+  <p style="margin: 4px 0 0; color: var(--muted);">SSH and Samba tasks.</p>
+</div>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Started</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for run in runs %}
+      <tr>
+        <td>{{ run.task_type }}</td>
+        <td>{{ run.started_at }}</td>
+        <td>{{ run.status }}</td>
+        <td style="text-align: right;">
+          <a class="button secondary" href="{{ url_for('system_run_detail', run_id=run.id) }}">View log</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4">No system runs yet.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
