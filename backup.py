@@ -80,6 +80,11 @@ def run_backup(profile_id: int, triggered_by: str) -> None:
         message = f"Unexpected error: {exc}"
         log(message)
     db.finish_run(run_id, status, message, "\n".join(log_lines))
+    
+    # Update last_scheduled_date on successful completion when triggered by scheduler
+    if status == "success" and triggered_by == "scheduler":
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+        db.set_profile_last_scheduled(profile_id, today)
 
 
 def run_profile_backup(profile, log) -> tuple[str, str]:
@@ -476,7 +481,7 @@ class SSHBackupRunner:
         parent_dir = os.path.dirname(remote_path.rstrip("/"))
         base = os.path.basename(remote_path.rstrip("/"))
         exclude_args = " ".join([f"--exclude='{pattern}'" for pattern in exclude_patterns])
-        tar_cmd = f"cd '{parent_dir}' && tar -czf '{archive_path}' {exclude_args} '{base}' 2>/dev/null"
+        tar_cmd = f"cd '{parent_dir}' && tar -czf '{archive_path}' {exclude_args} '{base}'"
         if use_sudo:
             tar_cmd = f"sudo -S sh -c \"{tar_cmd}\""
         stdin, stdout, stderr = ssh.exec_command(tar_cmd, timeout=3600)

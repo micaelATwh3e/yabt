@@ -344,3 +344,11 @@ def get_system_run(run_id: int) -> Optional[sqlite3.Row]:
             "SELECT * FROM system_runs WHERE id = ?",
             (run_id,),
         ).fetchone()
+
+
+def get_last_system_run_for_task(task_type: str) -> Optional[sqlite3.Row]:
+    with connect_db() as conn:
+        return conn.execute(
+            "SELECT * FROM system_runs WHERE task_type = ? ORDER BY started_at DESC LIMIT 1",
+            (task_type,),
+        ).fetchone()

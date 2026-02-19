@@ -40,7 +40,7 @@ def create_app() -> Flask:
     app.config["system_state"] = system_state
     app.config["system_lock"] = system_lock
 
-    sched = scheduler.Scheduler(queue.enqueue, lambda: _start_ssh_task(system_state, system_lock))
+    sched = scheduler.Scheduler(queue.enqueue, lambda: _start_ssh_task(system_state, system_lock, "scheduler"))
     sched.start()
     app.config["scheduler"] = sched
 
@@ -399,8 +399,8 @@ def _system_status(state: dict) -> dict:
     return {"ssh": state.get("ssh", False), "samba": state.get("samba", False)}
 
 
-def _start_ssh_task(state: dict, lock: threading.Lock) -> bool:
-    return _run_system_task("ssh", state, lock, async_mode=True, use_json=False)
+def _start_ssh_task(state: dict, lock: threading.Lock, triggered_by: str = "manual") -> bool:
+    return _run_system_task("ssh", state, lock, async_mode=True, use_json=False, triggered_by=triggered_by)
 
 
 def _run_system_task(
@@ -409,6 +409,7 @@ def _run_system_task(
     lock: threading.Lock,
     async_mode: bool = True,
     use_json: bool = True,
+    triggered_by: str = "manual",
 ):
     with lock:
         if state.get(task_type):
@@ -442,6 +443,13 @@ def _run_system_task(
             log(message)
         finally:
             db.finish_system_run(run_id, status, message, "\n".join(log_lines))
+            
+            # Update last_scheduled_date on successful completion when triggered by scheduler
+            if status == "success" and triggered_by == "scheduler":
+                if task_type == "ssh":
+                    today = db.now_iso()[:10]  # Extract date part (YYYY-MM-DD)
+                    db.set_setting("ssh_last_scheduled_date", today)
+            
             with lock:
                 state[task_type] = False
 
