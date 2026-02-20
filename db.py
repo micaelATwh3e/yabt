@@ -13,8 +13,16 @@ from typing import Iterable, Optional
 DB_PATH = Path(__file__).parent / "data" / "yatb.sqlite"
 
 
+class ManagedConnection(sqlite3.Connection):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        try:
+            super().__exit__(exc_type, exc_val, exc_tb)
+        finally:
+            self.close()
+
+
 def connect_db() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, factory=ManagedConnection)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
