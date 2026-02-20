@@ -13,6 +13,8 @@ import backup
 import db
 import scheduler
 
+SCHEDULE_FREQUENCIES = {"day", "week", "month", "year"}
+
 
 def create_app() -> Flask:
     """Create and configure the YATB Flask application."""
@@ -96,16 +98,23 @@ def create_app() -> Flask:
         config = db.get_setting_json("ssh_config", {})
         schedule_time = db.get_setting("ssh_schedule_time", "")
         schedule_enabled = db.get_setting("ssh_schedule_enabled", "0") == "1"
+        schedule_frequency = db.get_setting("ssh_schedule_frequency", "day")
+        if schedule_frequency not in SCHEDULE_FREQUENCIES:
+            schedule_frequency = "day"
         if request.method == "POST":
             raw = request.form.get("config_json", "{}")
             schedule_time = request.form.get("schedule_time", "").strip()
             schedule_enabled = request.form.get("schedule_enabled") == "on"
+            schedule_frequency = request.form.get("schedule_frequency", "day").strip().lower()
+            if schedule_frequency not in SCHEDULE_FREQUENCIES:
+                schedule_frequency = "day"
             try:
                 data = json.loads(raw)
                 if not isinstance(data, dict):
                     raise ValueError("Config must be a JSON object")
                 db.set_setting_json("ssh_config", data)
                 db.set_setting("ssh_schedule_time", schedule_time)
+                db.set_setting("ssh_schedule_frequency", schedule_frequency)
                 db.set_setting("ssh_schedule_enabled", "1" if schedule_enabled else "0")
                 flash("SSH configuration saved", "success")
                 return redirect(url_for("ssh_config"))
@@ -116,6 +125,7 @@ def create_app() -> Flask:
             config_json=json.dumps(config, indent=2),
             schedule_time=schedule_time,
             schedule_enabled=schedule_enabled,
+            schedule_frequency=schedule_frequency,
         )
 
     @app.route("/config/samba", methods=["GET", "POST"])
@@ -329,6 +339,8 @@ def _ensure_defaults() -> None:
         db.set_setting("ssh_schedule_enabled", "0")
     if db.get_setting("ssh_schedule_time") is None:
         db.set_setting("ssh_schedule_time", "")
+    if db.get_setting("ssh_schedule_frequency") is None:
+        db.set_setting("ssh_schedule_frequency", "day")
 
 
 def _ensure_default_configs() -> None:
@@ -470,6 +482,9 @@ def _profile_form_to_data(form):
     exclude_raw = form.get("exclude_patterns", "")
     exclude_patterns = [line.strip() for line in exclude_raw.splitlines() if line.strip()]
     schedule_time = form.get("schedule_time", "").strip() or None
+    schedule_frequency = form.get("schedule_frequency", "day").strip().lower()
+    if schedule_frequency not in SCHEDULE_FREQUENCIES:
+        schedule_frequency = "day"
     schedule_enabled = form.get("schedule_enabled") == "on"
     try:
         retention_count = int(form.get("retention_count", "7") or 0)
@@ -482,6 +497,7 @@ def _profile_form_to_data(form):
         "dest_path": dest_path,
         "exclude_patterns": exclude_patterns,
         "schedule_time": schedule_time,
+        "schedule_frequency": schedule_frequency,
         "schedule_enabled": schedule_enabled,
         "retention_count": retention_count,
         "verify_mode": verify_mode,
@@ -497,6 +513,7 @@ def _profile_to_form(profile):
         patterns = [line.strip() for line in raw.splitlines() if line.strip()]
     exclude_text = "\n".join(patterns)
     data = dict(profile)
+    data["schedule_frequency"] = data.get("schedule_frequency") or "day"
     data["exclude_text"] = exclude_text
     return data
 

@@ -47,7 +47,14 @@
     </div>
     <p style="color: var(--muted); margin-top: 6px;">{{ profile.source_path }} -> {{ profile.dest_path }}</p>
     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0;">
-      <span class="badge idle">Schedule {{ profile.schedule_time or 'off' }}</span>
+      <span class="badge idle">
+        Schedule
+        {% if profile.schedule_enabled and profile.schedule_time %}
+          {{ profile.schedule_time }} / {{ profile.schedule_frequency or 'day' }}
+        {% else %}
+          off
+        {% endif %}
+      </span>
       <span class="badge idle">Retention {{ profile.retention_count }}</span>
       <span class="badge idle">Verify {{ profile.verify_mode }}</span>
     </div>

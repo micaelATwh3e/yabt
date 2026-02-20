@@ -41,6 +41,7 @@ def init_db() -> None:
                 dest_path TEXT NOT NULL,
                 exclude_patterns TEXT NOT NULL,
                 schedule_time TEXT,
+                schedule_frequency TEXT NOT NULL DEFAULT 'day',
                 schedule_enabled INTEGER NOT NULL DEFAULT 0,
                 retention_count INTEGER NOT NULL DEFAULT 7,
                 verify_mode TEXT NOT NULL DEFAULT 'size',
@@ -77,6 +78,14 @@ def init_db() -> None:
             );
             """
         )
+
+        profile_columns = {
+            row["name"] for row in conn.execute("PRAGMA table_info(profiles)").fetchall()
+        }
+        if "schedule_frequency" not in profile_columns:
+            conn.execute(
+                "ALTER TABLE profiles ADD COLUMN schedule_frequency TEXT NOT NULL DEFAULT 'day'"
+            )
 
 
 def now_iso() -> str:
@@ -173,6 +182,7 @@ def create_profile(
     dest_path: str,
     exclude_patterns: Iterable[str],
     schedule_time: Optional[str],
+    schedule_frequency: str,
     schedule_enabled: bool,
     retention_count: int,
     verify_mode: str,
@@ -182,9 +192,9 @@ def create_profile(
             """
             INSERT INTO profiles (
                 name, source_path, dest_path, exclude_patterns,
-                schedule_time, schedule_enabled, retention_count, verify_mode,
+                schedule_time, schedule_frequency, schedule_enabled, retention_count, verify_mode,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 name,
@@ -192,6 +202,7 @@ def create_profile(
                 dest_path,
                 json.dumps(list(exclude_patterns)),
                 schedule_time,
+                schedule_frequency,
                 1 if schedule_enabled else 0,
                 retention_count,
                 verify_mode,
@@ -208,6 +219,7 @@ def update_profile(
     dest_path: str,
     exclude_patterns: Iterable[str],
     schedule_time: Optional[str],
+    schedule_frequency: str,
     schedule_enabled: bool,
     retention_count: int,
     verify_mode: str,
@@ -217,7 +229,7 @@ def update_profile(
             """
             UPDATE profiles
             SET name = ?, source_path = ?, dest_path = ?, exclude_patterns = ?,
-                schedule_time = ?, schedule_enabled = ?, retention_count = ?,
+                schedule_time = ?, schedule_frequency = ?, schedule_enabled = ?, retention_count = ?,
                 verify_mode = ?, updated_at = ?
             WHERE id = ?
             """,
@@ -227,6 +239,7 @@ def update_profile(
                 dest_path,
                 json.dumps(list(exclude_patterns)),
                 schedule_time,
+                schedule_frequency,
                 1 if schedule_enabled else 0,
                 retention_count,
                 verify_mode,

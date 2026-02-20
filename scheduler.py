@@ -4,10 +4,68 @@ Background scheduler for periodic backup execution.
 """
 from __future__ import annotations
 
+import calendar
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import db
+
+VALID_FREQUENCIES = {"day", "week", "month", "year"}
+
+
+def _normalize_frequency(value: str | None) -> str:
+    if not value:
+        return "day"
+    frequency = str(value).strip().lower()
+    return frequency if frequency in VALID_FREQUENCIES else "day"
+
+
+def _parse_utc_to_local(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return datetime.fromtimestamp(parsed.timestamp())
+
+
+def _add_months(value: datetime, months: int) -> datetime:
+    month_index = value.month - 1 + months
+    year = value.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(value.day, calendar.monthrange(year, month)[1])
+    return value.replace(year=year, month=month, day=day)
+
+
+def _add_years(value: datetime, years: int) -> datetime:
+    target_year = value.year + years
+    day = min(value.day, calendar.monthrange(target_year, value.month)[1])
+    return value.replace(year=target_year, day=day)
+
+
+def _next_scheduled_after(last_started_local: datetime, schedule_time: str, frequency: str) -> datetime:
+    hour_text, minute_text = schedule_time.split(":", 1)
+    base = last_started_local.replace(hour=int(hour_text), minute=int(minute_text), second=0, microsecond=0)
+
+    if frequency == "week":
+        return base + timedelta(days=7)
+    if frequency == "month":
+        return _add_months(base, 1)
+    if frequency == "year":
+        return _add_years(base, 1)
+    return base + timedelta(days=1)
+
+
+def _is_due_from_last_success(
+    now_local: datetime,
+    last_started_local: datetime,
+    schedule_time: str,
+    frequency: str,
+) -> bool:
+    today_schedule_passed = now_local.strftime("%H:%M") >= schedule_time
+
+    # If a success happened earlier today before schedule time, still allow first scheduled run.
+    if last_started_local.date() == now_local.date() and last_started_local.strftime("%H:%M") < schedule_time:
+        return today_schedule_passed
+
+    next_due = _next_scheduled_after(last_started_local, schedule_time, frequency)
+    return now_local >= next_due
 
 
 class Scheduler:
@@ -34,13 +92,13 @@ class Scheduler:
         profiles = db.list_profiles()
         now_local = datetime.now()
         now_utc = datetime.utcnow()
-        today = now_local.strftime("%Y-%m-%d")
         current_time = now_local.strftime("%H:%M")
 
         for profile in profiles:
             if not profile["schedule_enabled"]:
                 continue
             schedule_time = profile["schedule_time"]
+            schedule_frequency = _normalize_frequency(profile["schedule_frequency"])
             if not schedule_time:
                 continue
             if current_time < schedule_time:
@@ -54,26 +112,17 @@ class Scheduler:
                 # Never run before, run now if time is right
                 should_run = True
             elif last_run["status"] == "success":
-                # Last run was successful, only run if last successful run was before today's schedule time
+                # Last run was successful, run based on configured frequency.
                 last_started_at = last_run["started_at"]
                 if last_started_at:
                     try:
-                        last_started_utc = datetime.fromisoformat(last_started_at.replace("Z", "+00:00"))
-                        # Convert UTC to local time for comparison
-                        last_started_local = datetime.fromtimestamp(last_started_utc.timestamp())
-                        
-                        # Check if last run was today (local timezone)
-                        if last_started_local.date() == now_local.date():
-                            last_time = last_started_local.strftime("%H:%M")
-                            # Don't run if we already ran today at or after the schedule time
-                            if last_time >= schedule_time:
-                                should_run = False
-                            else:
-                                # Last run was today but before schedule time, so this is the first run at schedule time
-                                should_run = True
-                        else:
-                            # Last run was a different day, allow run
-                            should_run = True
+                        last_started_local = _parse_utc_to_local(last_started_at)
+                        should_run = _is_due_from_last_success(
+                            now_local,
+                            last_started_local,
+                            schedule_time,
+                            schedule_frequency,
+                        )
                     except (ValueError, AttributeError, TypeError):
                         # Can't parse date, allow run
                         should_run = True
@@ -99,11 +148,12 @@ class Scheduler:
                 enqueued = self._enqueue(int(profile["id"]), "scheduler")
                 # Note: last_scheduled_date will be updated on successful completion
 
-        self._run_ssh_schedule(current_time, today)
+        self._run_ssh_schedule(current_time)
 
-    def _run_ssh_schedule(self, current_time: str, today: str) -> None:
+    def _run_ssh_schedule(self, current_time: str) -> None:
         enabled = db.get_setting("ssh_schedule_enabled", "0") == "1"
         schedule_time = db.get_setting("ssh_schedule_time")
+        schedule_frequency = _normalize_frequency(db.get_setting("ssh_schedule_frequency", "day"))
         if not enabled or not schedule_time:
             return
         if current_time < schedule_time:
@@ -119,26 +169,17 @@ class Scheduler:
             # Never run before, run now if time is right
             should_run = True
         elif last_run["status"] == "success":
-            # Last run was successful, only run if last successful run was before today's schedule time
+            # Last run was successful, run based on configured frequency.
             last_started_at = last_run["started_at"]
             if last_started_at:
                 try:
-                    last_started_utc = datetime.fromisoformat(last_started_at.replace("Z", "+00:00"))
-                    # Convert UTC to local time for comparison
-                    last_started_local = datetime.fromtimestamp(last_started_utc.timestamp())
-                    
-                    # Check if last run was today (local timezone)
-                    if last_started_local.date() == now_local.date():
-                        last_time = last_started_local.strftime("%H:%M")
-                        # Don't run if we already ran today at or after the schedule time
-                        if last_time >= schedule_time:
-                            should_run = False
-                        else:
-                            # Last run was today but before schedule time, so this is the first run at schedule time
-                            should_run = True
-                    else:
-                        # Last run was a different day, allow run
-                        should_run = True
+                    last_started_local = _parse_utc_to_local(last_started_at)
+                    should_run = _is_due_from_last_success(
+                        now_local,
+                        last_started_local,
+                        schedule_time,
+                        schedule_frequency,
+                    )
                 except (ValueError, AttributeError, TypeError):
                     # Can't parse date, allow run
                     should_run = True

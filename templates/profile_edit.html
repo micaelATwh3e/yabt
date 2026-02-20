@@ -28,6 +28,16 @@
         <input type="time" name="schedule_time" value="{{ profile.schedule_time if profile else '' }}" />
       </div>
       <div>
+        <label>Schedule frequency</label>
+        {% set frequency = profile.schedule_frequency if profile else 'day' %}
+        <select name="schedule_frequency">
+          <option value="day" {{ 'selected' if frequency == 'day' else '' }}>Daily</option>
+          <option value="week" {{ 'selected' if frequency == 'week' else '' }}>Weekly</option>
+          <option value="month" {{ 'selected' if frequency == 'month' else '' }}>Monthly</option>
+          <option value="year" {{ 'selected' if frequency == 'year' else '' }}>Yearly</option>
+        </select>
+      </div>
+      <div>
         <label>Retention count</label>
         <input type="number" name="retention_count" min="0" value="{{ profile.retention_count if profile else 7 }}" />
       </div>

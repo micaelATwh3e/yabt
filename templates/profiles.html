@@ -29,7 +29,13 @@
         <td>{{ profile.name }}</td>
         <td>{{ profile.source_path }}</td>
         <td>{{ profile.dest_path }}</td>
-        <td>{{ profile.schedule_time or 'off' }}</td>
+        <td>
+          {% if profile.schedule_enabled and profile.schedule_time %}
+            {{ profile.schedule_time }} / {{ profile.schedule_frequency or 'day' }}
+          {% else %}
+            off
+          {% endif %}
+        </td>
         <td>{{ profile.verify_mode }}</td>
         <td style="text-align: right;">
           <a class="button secondary" href="{{ url_for('profile_edit', profile_id=profile.id) }}">Edit</a>

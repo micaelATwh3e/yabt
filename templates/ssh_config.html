@@ -15,6 +15,15 @@
         <label>Schedule time</label>
         <input type="time" name="schedule_time" value="{{ schedule_time }}" />
       </div>
+      <div>
+        <label>Schedule frequency</label>
+        <select name="schedule_frequency">
+          <option value="day" {{ 'selected' if schedule_frequency == 'day' else '' }}>Daily</option>
+          <option value="week" {{ 'selected' if schedule_frequency == 'week' else '' }}>Weekly</option>
+          <option value="month" {{ 'selected' if schedule_frequency == 'month' else '' }}>Monthly</option>
+          <option value="year" {{ 'selected' if schedule_frequency == 'year' else '' }}>Yearly</option>
+        </select>
+      </div>
       <div style="display: flex; align-items: flex-end;">
         <label style="display: inline-flex; align-items: center; gap: 8px;">
           <input type="checkbox" name="schedule_enabled" {{ 'checked' if schedule_enabled else '' }} />
